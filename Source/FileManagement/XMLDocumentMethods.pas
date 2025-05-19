@@ -5,7 +5,8 @@ interface
     uses
         system.SysUtils, system.Classes, system.Generics.Collections, system.StrUtils,
         Xml.XMLDoc, Xml.XMLIntf, Xml.xmldom,
-        ArrayConversionMethods
+        ArrayConversionMethods,
+        vcl.ExtCtrls //this is here so that the compiler can use the vcl library's xml parsing functionality
         ;
 
     //read data from XML node
