@@ -16,7 +16,9 @@ uses
   ArrayConversionMethods in 'Source\FileManagement\ArrayConversionMethods.pas',
   FileReaderWriterClass in 'Source\FileManagement\FileReaderWriterClass.pas',
   TEST_FileReaderWriterClass in 'Source\FileManagement\TEST_FileReaderWriterClass.pas',
-  XMLDocumentMethods in 'Source\FileManagement\XMLDocumentMethods.pas';
+  XMLDocumentMethods in 'Source\FileManagement\XMLDocumentMethods.pas',
+  LimitStateAngleClass in 'Source\Engineering\LimitStateAngleClass.pas',
+  LimitStateMaterialClass in 'Source\Engineering\LimitStateMaterialClass.pas';
 
 { keep comment here to protect the following conditional from being removed by the IDE when adding a unit }
 {$IFNDEF TESTINSIGHT}
