@@ -14,7 +14,7 @@ uses
   {$ENDIF }
   DUnitX.TestFramework,
   ArrayConversionMethods in 'Source\FileManagement\ArrayConversionMethods.pas',
-  FileReaderWriterClass in 'Source\FileManagement\FileReaderWriterClass.pas',
+  XMLFileReaderWriter in 'Source\FileManagement\XMLFileReaderWriter.pas',
   TEST_FileReaderWriterClass in 'Source\FileManagement\TEST_FileReaderWriterClass.pas',
   XMLNodeWrapper in 'Source\FileManagement\XMLNodeWrapper.pas';
 

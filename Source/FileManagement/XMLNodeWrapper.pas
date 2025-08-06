@@ -3,31 +3,35 @@ unit XMLNodeWrapper;
 interface
 
     uses
-        system.SysUtils, system.Classes, system.Generics.Collections, system.StrUtils,
-        Xml.XMLDoc, Xml.XMLIntf, Xml.xmldom,
-        ArrayConversionMethods,
-        vcl.ExtCtrls //this is here so that the compiler can use the vcl library's xml parsing functionality
-        ;
+        system.SysUtils, system.StrUtils,
+        Xml.XMLIntf,
+        ArrayConversionMethods;
 
     type
         TWrappedXMLNode = record
             strict private
                 var
                     wrappedXMLDataNode : IXMLNode;
-                //read value from node
-                    function tryReadValue(const dataIdentifierIn, valueTypeIn : string; out valueOut : string) : boolean;
-                //read array
-                    function tryReadArray(const dataIdentifierIn, arrayTypeIn : string; out valuesArrayOut : TArray<string>) : boolean;
-                //write value to node
-                    procedure writeValue(const dataIdentifierIn, valueTypeIn, valueIn : string);
-                //write array to node
-                    procedure writeArray(const dataIdentifierIn, arrayTypeIn : string; valuesArrayIn : TArray<string>);
+                //child node
+                    //try get a child node
+                        function tryGetChildNode(const childNodeIdentifierIn : string; out childNodeOut : TWrappedXMLNode) : boolean; overload;
+                    //create new child node
+                        function tryCreateNewChild(const childNodeIdentifierIn : string; out newChildNodeOut : TWrappedXMLNode) : boolean; overload;
+                //read from nodes
+                    //read value from node
+                        function tryReadValue(const dataIdentifierIn, valueTypeIn : string; out valueOut : string) : boolean;
+                    //read array
+                        function tryReadArray(const dataIdentifierIn, arrayTypeIn : string; out valuesArrayOut : TArray<string>) : boolean;
+                //write to node
+                    //write value to node
+                        procedure writeValue(const dataIdentifierIn, valueTypeIn, valueIn : string);
+                    //write array to node
+                        procedure writeArray(const dataIdentifierIn, arrayTypeIn : string; valuesArrayIn : TArray<string>);
             public
-                //set the node
+                //set the XML node
                     procedure setXMLNode(const newXMLNodeIn : IXMLNode);
                 //read data from XML node
                     //try get a parent node's child node
-                        function tryGetChildNode(const childNodeIdentifierIn : string; out childNodeOut : TWrappedXMLNode) : boolean; overload;
                         function tryGetChildNode(const childNodeIdentifierIn, childNodeDataTypeIn : string; out childNodeOut : TWrappedXMLNode) : boolean; overload;
                     //data type
                         function isDataType(const nodeDataTypeIn : string) : boolean;
@@ -49,7 +53,6 @@ interface
                             function TryReadStringArray(const dataIdentifierIn : string; out stringArrayOut : TArray<string>) : boolean;
                 //write data to XML node
                     //create new child node
-                        function tryCreateNewChild(const childNodeIdentifierIn : string; out newChildNodeOut : TWrappedXMLNode) : boolean; overload;
                         function tryCreateNewChild(const childNodeIdentifierIn, childNodeDataTypeIn : string; out newChildNodeOut : TWrappedXMLNode) : boolean; overload;
                     //data type
                         procedure setDataType(const nodeTypeIn : string);
@@ -72,6 +75,9 @@ interface
 
 implementation
 
+    uses
+        VCL.Controls; //VCL.controls initialisation section initialises the MSXML library
+
     const
         //general strings
             ARRAY_ELEMENT_DELIMITER : string = ';';
@@ -88,91 +94,8 @@ implementation
             VT_STRING_ARRAY : string = 'string_array';
 
     //private
-        //read value from node
-            function TWrappedXMLNode.tryReadValue(const dataIdentifierIn, valueTypeIn : string; out valueOut : string) : boolean;
-                var
-                    childDataNode : TWrappedXMLNode;
-                begin
-                    //initialise value
-                        valueOut := '';
-
-                    //check if the parent node is assigned
-                        if NOT( Assigned(wrappedXMLDataNode) ) then
-                            exit( False );
-
-                    //get the child data node
-                        if NOT( tryGetChildNode( dataIdentifierIn, childDataNode ) ) then
-                            exit( False );
-
-                    //check the child value type is correct
-                        if NOT( childDataNode.wrappedXMLDataNode.Attributes[ VALUE_TYPE_STRING ] = valueTypeIn ) then
-                            exit( False );
-
-                    valueOut := trim( childDataNode.wrappedXMLDataNode.Text );
-
-                    result := True;
-                end;
-
-        //read array
-            function TWrappedXMLNode.tryReadArray(const dataIdentifierIn, arrayTypeIn : string; out valuesArrayOut : TArray<string>) : boolean;
-                var
-                    readSuccessful, dataIsArray : boolean;
-                    readDataValue               : string;
-                begin
-                    readSuccessful := tryReadValue( dataIdentifierIn, arrayTypeIn, readDataValue );
-
-                    if ( NOT( readSuccessful ) OR ( readDataValue = '' ) ) then
-                        begin
-                            SetLength( valuesArrayOut, 0 );
-                            exit( False );
-                        end;
-
-                    dataIsArray := Pos( ARRAY_ELEMENT_DELIMITER, readDataValue ) > 1;
-
-                    if NOT( dataIsArray ) then
-                        begin
-                            SetLength( valuesArrayOut, 1 );
-                            valuesArrayOut[0] := readDataValue;
-                            exit( True );
-                        end;
-
-                    valuesArrayOut := SplitString( readDataValue, ARRAY_ELEMENT_DELIMITER );
-
-                    result := True;
-                end;
-
-        //write value to node
-            procedure TWrappedXMLNode.writeValue(const dataIdentifierIn, valueTypeIn, valueIn : string);
-                var
-                    childDataNode : TWrappedXMLNode;
-                begin
-                    //check if the XML node is assigned ( != nil )
-                        if NOT( Assigned( wrappedXMLDataNode ) ) then
-                            exit();
-
-                    //create a child data node
-                        if NOT( tryCreateNewChild( dataIdentifierIn, childDataNode ) ) then
-                            exit();
-
-                    //write data to node
-                        childDataNode.wrappedXMLDataNode.Attributes[ VALUE_TYPE_STRING ] := valueTypeIn;
-                        childDataNode.wrappedXMLDataNode.Text := Trim( valueIn );
-                end;
-
-        //write array to node
-            procedure TWrappedXMLNode.writeArray(const dataIdentifierIn, arrayTypeIn : string; valuesArrayIn : TArray<string>);
-                var
-                    concatenatedValuesArray : string;
-                begin
-                    concatenatedValuesArray := string.Join( ARRAY_ELEMENT_DELIMITER, valuesArrayIn );
-
-                    writeValue( dataIdentifierIn, arrayTypeIn, concatenatedValuesArray );
-                end;
-
-
-    //public
-        //read data from XML node
-            //try get a parent node's child node
+        //child nodes
+            //try get a child node
                 function TWrappedXMLNode.tryGetChildNode(const childNodeIdentifierIn : string; out childNodeOut : TWrappedXMLNode) : boolean;
                     var
                         childNode       : IXMLNode;
@@ -190,6 +113,124 @@ implementation
                         result := True;
                     end;
 
+            //create new child node
+                function TWrappedXMLNode.tryCreateNewChild(const childNodeIdentifierIn : string; out newChildNodeOut : TWrappedXMLNode) : boolean;
+                    var
+                        childNodeAlreadyExists  : boolean;
+                        childNode,
+                        newChildNode            : IXMLNode;
+                    begin
+                        //check if the data identifier is already used
+                            childNode := wrappedXMLDataNode.ChildNodes.FindNode( childNodeIdentifierIn );
+
+                            childNodeAlreadyExists := Assigned( childNode );
+
+                            if ( childNodeAlreadyExists ) then
+                                begin
+                                    newChildNodeOut.setXMLNode( nil );
+                                    exit( False );
+                                end;
+
+                        //create the new child now
+                            newChildNode := wrappedXMLDataNode.AddChild( childNodeIdentifierIn );
+
+                            newChildNodeOut.setXMLNode( newChildNode );
+
+                        result := True;
+                    end;
+
+        //read from nodes
+            //read value from node
+                function TWrappedXMLNode.tryReadValue(const dataIdentifierIn, valueTypeIn : string; out valueOut : string) : boolean;
+                    var
+                        childDataNode : TWrappedXMLNode;
+                    begin
+                        //initialise value
+                            valueOut := '';
+
+                        //check if the parent node is assigned
+                            if NOT( Assigned(wrappedXMLDataNode) ) then
+                                exit( False );
+
+                        //get the child data node
+                            if NOT( tryGetChildNode( dataIdentifierIn, childDataNode ) ) then
+                                exit( False );
+
+                        //check the child value type is correct
+                            if NOT( childDataNode.wrappedXMLDataNode.Attributes[ VALUE_TYPE_STRING ] = valueTypeIn ) then
+                                exit( False );
+
+                        valueOut := trim( childDataNode.wrappedXMLDataNode.Text );
+
+                        result := True;
+                    end;
+
+            //read array
+                function TWrappedXMLNode.tryReadArray(const dataIdentifierIn, arrayTypeIn : string; out valuesArrayOut : TArray<string>) : boolean;
+                    var
+                        readSuccessful, dataIsArray : boolean;
+                        readDataValue               : string;
+                    begin
+                        readSuccessful := tryReadValue( dataIdentifierIn, arrayTypeIn, readDataValue );
+
+                        if ( NOT( readSuccessful ) OR ( readDataValue = '' ) ) then
+                            begin
+                                SetLength( valuesArrayOut, 0 );
+                                exit( False );
+                            end;
+
+                        dataIsArray := Pos( ARRAY_ELEMENT_DELIMITER, readDataValue ) > 1;
+
+                        if NOT( dataIsArray ) then
+                            begin
+                                SetLength( valuesArrayOut, 1 );
+                                valuesArrayOut[0] := readDataValue;
+                                exit( True );
+                            end;
+
+                        valuesArrayOut := SplitString( readDataValue, ARRAY_ELEMENT_DELIMITER );
+
+                        result := True;
+                    end;
+
+        //write to nodes
+            //write value to node
+                procedure TWrappedXMLNode.writeValue(const dataIdentifierIn, valueTypeIn, valueIn : string);
+                    var
+                        childDataNode : TWrappedXMLNode;
+                    begin
+                        //check if the XML node is assigned ( != nil )
+                            if NOT( Assigned( wrappedXMLDataNode ) ) then
+                                exit();
+
+                        //create a child data node
+                            if NOT( tryCreateNewChild( dataIdentifierIn, childDataNode ) ) then
+                                exit();
+
+                        //write data to node
+                            childDataNode.wrappedXMLDataNode.Attributes[ VALUE_TYPE_STRING ] := valueTypeIn;
+                            childDataNode.wrappedXMLDataNode.Text := Trim( valueIn );
+                    end;
+
+            //write array to node
+                procedure TWrappedXMLNode.writeArray(const dataIdentifierIn, arrayTypeIn : string; valuesArrayIn : TArray<string>);
+                    var
+                        concatenatedValuesArray : string;
+                    begin
+                        concatenatedValuesArray := string.Join( ARRAY_ELEMENT_DELIMITER, valuesArrayIn );
+
+                        writeValue( dataIdentifierIn, arrayTypeIn, concatenatedValuesArray );
+                    end;
+
+    //public
+        //set the XML node
+            procedure TWrappedXMLNode.setXMLNode(const newXMLNodeIn : IXMLNode);
+                begin
+                    wrappedXMLDataNode := newXMLNodeIn;
+                end;
+
+        //read data from XML node
+            //try get a parent node's child node
                 function TWrappedXMLNode.tryGetChildNode(const childNodeIdentifierIn, childNodeDataTypeIn : string; out childNodeOut : TWrappedXMLNode) : boolean;
                     begin
                         if NOT( tryGetChildNode( childNodeIdentifierIn, childNodeOut ) ) then
@@ -346,31 +387,6 @@ implementation
 
         //write data to XML node
             //create new child node
-                function TWrappedXMLNode.tryCreateNewChild(const childNodeIdentifierIn : string; out newChildNodeOut : TWrappedXMLNode) : boolean;
-                    var
-                        childNodeAlreadyExists  : boolean;
-                        childNode,
-                        newChildNode            : IXMLNode;
-                    begin
-                        //check if the data identifier is already used
-                            childNode := wrappedXMLDataNode.ChildNodes.FindNode( childNodeIdentifierIn );
-
-                            childNodeAlreadyExists := Assigned( childNode );
-
-                            if ( childNodeAlreadyExists ) then
-                                begin
-                                    newChildNodeOut.setXMLNode( nil );
-                                    exit( False );
-                                end;
-
-                        //create the new child now
-                            newChildNode := wrappedXMLDataNode.AddChild( childNodeIdentifierIn );
-
-                            newChildNodeOut.setXMLNode( newChildNode );
-
-                        result := True;
-                    end;
-
                 function TWrappedXMLNode.tryCreateNewChild(const childNodeIdentifierIn, childNodeDataTypeIn : string; out newChildNodeOut : TWrappedXMLNode) : boolean;
                     begin
                         if NOT( tryCreateNewChild( childNodeIdentifierIn, newChildNodeOut ) ) then
@@ -407,7 +423,7 @@ implementation
                     begin
                         intStr := IntToStr( integerValueIn );
 
-                        writeValue( dataIdentifierIn, VT_INT, intStr )
+                        writeValue( dataIdentifierIn, VT_INT, intStr );
                     end;
 
             //double
@@ -417,7 +433,7 @@ implementation
                     begin
                         doubleStr := FloatToStr( doubleValueIn );
 
-                        writeValue( dataIdentifierIn, VT_DOUBLE, doubleStr )
+                        writeValue( dataIdentifierIn, VT_DOUBLE, doubleStr );
                     end;
 
             //string

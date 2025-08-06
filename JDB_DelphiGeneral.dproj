@@ -121,7 +121,7 @@
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
         <DCCReference Include="Source\FileManagement\ArrayConversionMethods.pas"/>
-        <DCCReference Include="Source\FileManagement\FileReaderWriterClass.pas"/>
+        <DCCReference Include="Source\FileManagement\XMLFileReaderWriter.pas"/>
         <DCCReference Include="Source\FileManagement\TEST_FileReaderWriterClass.pas"/>
         <DCCReference Include="Source\FileManagement\XMLNodeWrapper.pas"/>
         <BuildConfiguration Include="Base">

@@ -11,7 +11,7 @@ interface
         TTestFileReaderWriterClass = class
             private
                 const
-                    TEST_FILE_PATH : string = '..\FRWTestFile.xml';
+                    TEST_FILE_PATH : string = '..\XMLFileReadWriteTest.xml';
                 procedure deleteTestFile();
             public
                 [Test]
@@ -27,15 +27,135 @@ interface
                 [Test]
                 procedure testReadGhostData();
                 [Test]
-                procedure testWriteData();
-
+                procedure testComplexType();
         end;
 
 implementation
 
     uses
         system.Math,
-        FileReaderWriterClass;
+        XMLNodeWrapper,
+        XMLFileReaderWriter;
+
+    type
+        TComplexTypeRecord = record
+            private
+                const
+                    TYPE_STRING : string = 'TComplexTypeRecord';
+                    BOOL_VAL    : string = 'boolVal';
+                    INT_VAL     : string = 'intVal';
+                    DOUBLE_VAL  : string = 'doubleVal';
+                    STRING_VAL  : string = 'stringVal';
+                    ARR_INT     : string = 'arrInt';
+                    ARR_DOUBLE  : string = 'arrDouble';
+                    ARR_STRING  : string = 'arrString';
+                var
+                    boolVal     : boolean;
+                    intVal      : integer;
+                    doubleVal   : double;
+                    stringVal   : string;
+                    arrInt      : TArray<integer>;
+                    arrDouble   : TArray<double>;
+                    arrString   : TArray<string>;
+            public
+                procedure initialiseValues( boolValIn       : boolean;
+                                            intValIn        : integer;
+                                            doubleValIn     : double;
+                                            stringValIn     : string;
+                                            arrIntIn        : TArray<integer>;
+                                            arrDoubleIn     : TArray<double>;
+                                            arrStringIn     : TArray<string>    );
+                function isEqual(const otherComplexRecordIn : TComplexTypeRecord) : boolean;
+                function tryReadFromXML(const xmlNodeIn : TWrappedXMLNode; const identifierIn : string) : boolean;
+                procedure writeToXML(const xmlNodeIn : TWrappedXMLNode; const identifierIn : string);
+        end;
+
+    procedure TComplexTypeRecord.initialiseValues(  boolValIn       : boolean;
+                                                    intValIn        : integer;
+                                                    doubleValIn     : double;
+                                                    stringValIn     : string;
+                                                    arrIntIn        : TArray<integer>;
+                                                    arrDoubleIn     : TArray<double>;
+                                                    arrStringIn     : TArray<string>    );
+        begin
+            boolVal     := boolValIn;
+            intVal      := intValIn;
+            doubleVal   := doubleValIn;
+            stringVal   := stringValIn;
+            arrInt      := arrIntIn;
+            arrDouble   := arrDoubleIn;
+            arrString   := arrStringIn;
+        end;
+
+    function TComplexTypeRecord.isEqual(const otherComplexRecordIn : TComplexTypeRecord) : boolean;
+        var
+            areEqual    : boolean;
+            i           : integer;
+        begin
+            areEqual := True;
+
+            areEqual := areEqual AND (self.boolVal = otherComplexRecordIn.boolVal);
+            areEqual := areEqual AND (self.intVal = otherComplexRecordIn.intVal);
+            areEqual := areEqual AND SameValue(self.doubleVal, otherComplexRecordIn.doubleVal, 1e-3);
+            areEqual := areEqual AND (self.stringVal = otherComplexRecordIn.stringVal);
+
+            for i := 0 to (length(self.arrInt) - 1) do
+                areEqual := areEqual AND (self.arrInt[i] = otherComplexRecordIn.arrInt[i]);
+
+            for i := 0 to (length(self.arrDouble) - 1) do
+                areEqual := areEqual AND SameValue(self.arrDouble[i], otherComplexRecordIn.arrDouble[i], 1e-3);
+
+            for i := 0 to (length(self.arrString) - 1) do
+                areEqual := areEqual AND (self.arrString[i] = otherComplexRecordIn.arrString[i]);
+
+            result := areEqual;
+        end;
+
+    function TComplexTypeRecord.tryReadFromXML(const xmlNodeIn : TWrappedXMLNode; const identifierIn : string) : boolean;
+        var
+            readSuccussful  : boolean;
+            complexTypeNode,
+            arraysNode      : TWrappedXMLNode;
+        begin
+            if NOT( xmlNodeIn.tryGetChildNode( identifierIn, TYPE_STRING, complexTypeNode ) ) then
+                exit( False );
+
+            readSuccussful := True;
+
+            readSuccussful := complexTypeNode.tryReadBoolean(   BOOL_VAL,       boolVal     ) AND readSuccussful;
+            readSuccussful := complexTypeNode.tryReadInteger(   INT_VAL,        intVal      ) AND readSuccussful;
+            readSuccussful := complexTypeNode.tryReadDouble(    DOUBLE_VAL,     doubleVal   ) AND readSuccussful;
+            readSuccussful := complexTypeNode.tryReadString(    STRING_VAL,     stringVal   ) AND readSuccussful;
+
+            readSuccussful := complexTypeNode.tryGetChildNode( 'ArrayData', 'ARRAYS', arraysNode ) AND readSuccussful;
+
+            readSuccussful := arraysNode.TryReadIntegerArray(   ARR_INT,        arrInt      ) AND readSuccussful;
+            readSuccussful := arraysNode.TryReadDoubleArray(    ARR_DOUBLE,     arrDouble   ) AND readSuccussful;
+            readSuccussful := arraysNode.TryReadStringArray(    ARR_STRING,     arrString   ) AND readSuccussful;
+
+            result := readSuccussful;
+        end;
+
+    procedure TComplexTypeRecord.writeToXML(const xmlNodeIn : TWrappedXMLNode; const identifierIn : string);
+        var
+            complexTypeNode,
+            arraysNode      : TWrappedXMLNode;
+        begin
+            if NOT( xmlNodeIn.tryCreateNewChild( identifierIn, TYPE_STRING, complexTypeNode ) ) then
+                exit();
+
+            complexTypeNode.writeBoolean(   BOOL_VAL,       boolVal     );
+            complexTypeNode.writeInteger(   INT_VAL,        intVal      );
+            complexTypeNode.writeDouble(    DOUBLE_VAL,     doubleVal   );
+            complexTypeNode.writeString(    STRING_VAL,     stringVal   );
+
+            if NOT( complexTypeNode.tryCreateNewChild( 'ArrayData', 'ARRAYS', arraysNode ) ) then
+                exit();
+
+            arraysNode.writeIntegerArray(   ARR_INT,        arrInt      );
+            arraysNode.writeDoubleArray(    ARR_DOUBLE,     arrDouble   );
+            arraysNode.writeStringArray(    ARR_STRING,     arrString   );
+        end;
 
     procedure TTestFileReaderWriterClass.deleteTestFile();
         begin
@@ -45,162 +165,146 @@ implementation
 
     procedure TTestFileReaderWriterClass.testReadWriteBool();
         var
-            testBool        : boolean;
-            fileReadWrite   : TFileReaderWriter;
+            testBool    : boolean;
+            XMLFile     : TXMLFileReaderWriter;
         begin
             deleteTestFile();
 
             //save data
-                fileReadWrite := TFileReaderWriter.create( TEST_FILE_PATH );
+                XMLFile.initialiseXMLDocument();
 
-                fileReadWrite.writeBool( 'boolean1', True );
-                fileReadWrite.writeBool( 'boolean2', False );
+                XMLFile.RootNode.writeBoolean( 'boolean1', True );
+                XMLFile.RootNode.writeBoolean( 'boolean2', False );
 
-                fileReadWrite.saveFile();
-
-                FreeAndNil( fileReadWrite );
+                XMLFile.saveFile(TEST_FILE_PATH);
 
             //load data
-                fileReadWrite := TFileReaderWriter.create( TEST_FILE_PATH );
+                XMLFile.loadFile(TEST_FILE_PATH);
 
-                fileReadWrite.loadFile();
-
-                fileReadWrite.tryReadBool( 'boolean1', testBool );
+                XMLFile.RootNode.tryReadBoolean( 'boolean1', testBool );
                 Assert.IsTrue( testBool = True );
 
-                fileReadWrite.tryReadBool( 'boolean2', testBool );
+                XMLFile.RootNode.tryReadBoolean( 'boolean2', testBool );
                 Assert.IsTrue( testBool = False );
-
-                FreeAndNil( fileReadWrite );
         end;
 
     procedure TTestFileReaderWriterClass.testReadWriteInteger();
         var
-            testInteger     : integer;
-            fileReadWrite   : TFileReaderWriter;
+            testInteger : integer;
+            XMLFile     : TXMLFileReaderWriter;
         begin
             deleteTestFile();
 
             //save data
-                fileReadWrite := TFileReaderWriter.create( TEST_FILE_PATH );
+                XMLFile.initialiseXMLDocument();
 
-                fileReadWrite.writeInteger( 'integer1', 2 );
-                fileReadWrite.writeInteger( 'integer2', 8 );
-                fileReadWrite.writeInteger( 'integer3', 32 );
-                fileReadWrite.writeInteger( 'integer4', 128 );
-                fileReadWrite.writeInteger( 'integer5', 512 );
+                XMLFile.RootNode.writeInteger( 'integer1', 2 );
+                XMLFile.RootNode.writeInteger( 'integer2', 8 );
+                XMLFile.RootNode.writeInteger( 'integer3', 32 );
+                XMLFile.RootNode.writeInteger( 'integer4', 128 );
+                XMLFile.RootNode.writeInteger( 'integer5', 512 );
 
-                fileReadWrite.saveFile();
-
-                FreeAndNil( fileReadWrite );
+                XMLFile.saveFile(TEST_FILE_PATH);
 
             //load data
-                fileReadWrite := TFileReaderWriter.create( TEST_FILE_PATH );
+                XMLFile.loadFile(TEST_FILE_PATH);
 
-                fileReadWrite.loadFile();
-
-                fileReadWrite.tryReadInteger( 'integer1', testInteger );
+                XMLFile.RootNode.tryReadInteger( 'integer1', testInteger );
                 assert.AreEqual( testInteger, 2 );
 
-                fileReadWrite.tryReadInteger( 'integer2', testInteger );
+                XMLFile.RootNode.tryReadInteger( 'integer2', testInteger );
                 assert.AreEqual( testInteger, 8 );
 
-                fileReadWrite.tryReadInteger( 'integer3', testInteger );
+                XMLFile.RootNode.tryReadInteger( 'integer3', testInteger );
                 assert.AreEqual( testInteger, 32 );
 
-                fileReadWrite.tryReadInteger( 'integer4', testInteger );
+                XMLFile.RootNode.tryReadInteger( 'integer4', testInteger );
                 assert.AreEqual( testInteger, 128 );
 
-                fileReadWrite.tryReadInteger( 'integer5', testInteger );
+                XMLFile.RootNode.tryReadInteger( 'integer5', testInteger );
                 assert.AreEqual( testInteger, 512 );
-
-                FreeAndNil( fileReadWrite );
         end;
 
     procedure TTestFileReaderWriterClass.testReadWriteDouble();
         var
-            testDouble      : double;
-            fileReadWrite   : TFileReaderWriter;
+            testDouble  : double;
+            XMLFile     : TXMLFileReaderWriter;
         begin
             deleteTestFile();
 
             //save data
-                fileReadWrite := TFileReaderWriter.create( TEST_FILE_PATH );
+                XMLFile.initialiseXMLDocument();
 
-                fileReadWrite.writeDouble( 'double1', 123.456 );
-                fileReadWrite.writeDouble( 'double2', 654.987 );
-                fileReadWrite.writeDouble( 'double3', 741.852 );
-                fileReadWrite.writeDouble( 'double4', 369.258 );
-                fileReadWrite.writeDouble( 'double5', 159.753 );
+                XMLFile.RootNode.writeDouble( 'double1', 123.456 );
+                XMLFile.RootNode.writeDouble( 'double2', 654.987 );
+                XMLFile.RootNode.writeDouble( 'double3', 741.852 );
+                XMLFile.RootNode.writeDouble( 'double4', 369.258 );
+                XMLFile.RootNode.writeDouble( 'double5', 159.753 );
 
-                fileReadWrite.saveFile();
-
-                FreeAndNil( fileReadWrite );
+                XMLFile.saveFile(TEST_FILE_PATH);
 
             //load data
-                fileReadWrite := TFileReaderWriter.create( TEST_FILE_PATH );
+                XMLFile.loadFile(TEST_FILE_PATH);
 
-                fileReadWrite.loadFile();
-
-                fileReadWrite.tryReadDouble( 'double1', testDouble );
+                XMLFile.RootNode.tryReadDouble( 'double1', testDouble );
                 assert.IsTrue( SameValue( testDouble, 123.456, 1e-3) );
 
-                fileReadWrite.tryReadDouble( 'double2', testDouble );
+                XMLFile.RootNode.tryReadDouble( 'double2', testDouble );
                 assert.IsTrue( SameValue( testDouble, 654.987, 1e-3) );
 
-                fileReadWrite.tryReadDouble( 'double3', testDouble );
+                XMLFile.RootNode.tryReadDouble( 'double3', testDouble );
                 assert.IsTrue( SameValue( testDouble, 741.852, 1e-3) );
 
-                fileReadWrite.tryReadDouble( 'double4', testDouble );
+                XMLFile.RootNode.tryReadDouble( 'double4', testDouble );
                 assert.IsTrue( SameValue( testDouble, 369.258, 1e-3) );
 
-                fileReadWrite.tryReadDouble( 'double5', testDouble );
+                XMLFile.RootNode.tryReadDouble( 'double5', testDouble );
                 assert.IsTrue( SameValue( testDouble, 159.753, 1e-3) );
-
-                FreeAndNil( fileReadWrite );
         end;
 
     procedure TTestFileReaderWriterClass.testReadWriteString();
         var
-            testString      : string;
-            fileReadWrite   : TFileReaderWriter;
+            testString  : string;
+            XMLFile     : TXMLFileReaderWriter;
         begin
             deleteTestFile();
 
             //save data
-                fileReadWrite := TFileReaderWriter.create( TEST_FILE_PATH );
+                XMLFile.initialiseXMLDocument();
 
-                fileReadWrite.writeString( 'string1', 'asdf' );
-                fileReadWrite.writeString( 'string2', '!@#$%' );
-                fileReadWrite.writeString( 'string3', 'Jason Daniel Barry' );
-                fileReadWrite.writeString( 'string4', 'Youtube' );
-                fileReadWrite.writeString( 'string5', '123.456' );
+                XMLFile.RootNode.writeString( 'string1', 'asdf' );
+                XMLFile.RootNode.writeString( 'string2', '!@#$%' );
+                XMLFile.RootNode.writeString( 'string3', 'Jason Daniel Barry' );
+                XMLFile.RootNode.writeString( 'string4', 'Youtube' );
+                XMLFile.RootNode.writeString( 'string5', '123.456' );
 
-                fileReadWrite.saveFile();
-
-                FreeAndNil( fileReadWrite );
+                XMLFile.saveFile( TEST_FILE_PATH );
 
             //load data
-                fileReadWrite := TFileReaderWriter.create( TEST_FILE_PATH );
+                XMLFile.loadFile( TEST_FILE_PATH );
 
-                fileReadWrite.loadFile();
-
-                fileReadWrite.tryReadString( 'string1', testString );
+                XMLFile.RootNode.tryReadString( 'string1', testString );
                 assert.AreEqual( testString, 'asdf' );
 
-                fileReadWrite.tryReadString( 'string2', testString );
+                XMLFile.RootNode.tryReadString( 'string2', testString );
                 assert.AreEqual( testString, '!@#$%' );
 
-                fileReadWrite.tryReadString( 'string3', testString );
+                XMLFile.RootNode.tryReadString( 'string3', testString );
                 assert.AreEqual( testString, 'Jason Daniel Barry' );
 
-                fileReadWrite.tryReadString( 'string4', testString );
+                XMLFile.RootNode.tryReadString( 'string4', testString );
                 assert.AreEqual( testString, 'Youtube' );
 
-                fileReadWrite.tryReadString( 'string5', testString );
+                XMLFile.RootNode.tryReadString( 'string5', testString );
                 assert.AreEqual( testString, '123.456' );
+        end;
 
-                FreeAndNil( fileReadWrite );
+    procedure TestDoubleArraysAreEqual(const arr1In, arr2In : TArray<double>);
+        var
+            i : integer;
+        begin
+            for i := 0 to ( length(arr1In) - 1 ) do
+                assert.IsTrue( SameValue( arr1In[i], arr2In[i], 1e-3 ) );
         end;
 
     procedure TTestFileReaderWriterClass.testReadWriteArrays();
@@ -209,7 +313,7 @@ implementation
             integerArrayRead, integerArrayWrite : TArray<integer>;
             doubleArrayRead, doubleArrayWrite   : TArray<double>;
             stringArrayRead, stringArrayWrite   : TArray<string>;
-            fileReadWrite                       : TFileReaderWriter;
+            XMLFile                             : TXMLFileReaderWriter;
         begin
             deleteTestFile();
 
@@ -218,35 +322,28 @@ implementation
             stringArrayWrite    := ['This', 'I$', '@ string', '123 array', 'to %$#', '159 test', 'reading', '@nd', 'WRITING'];
 
             //save data
-                fileReadWrite := TFileReaderWriter.create( TEST_FILE_PATH );
+                XMLFile.initialiseXMLDocument();
 
-                fileReadWrite.writeIntegerArray( 'IntegerArray', integerArrayWrite );
-                fileReadWrite.writeDoubleArray( 'DoubleArray', doubleArrayWrite );
-                fileReadWrite.writeStringArray( 'StringArray', stringArrayWrite );
+                XMLFile.RootNode.writeIntegerArray( 'IntegerArray', integerArrayWrite );
+                XMLFile.RootNode.writeDoubleArray( 'DoubleArray', doubleArrayWrite );
+                XMLFile.RootNode.writeStringArray( 'StringArray', stringArrayWrite );
 
-                fileReadWrite.saveFile();
-
-                FreeAndNil( fileReadWrite );
+                XMLFile.saveFile(TEST_FILE_PATH);
 
             //load data
-                fileReadWrite := TFileReaderWriter.create( TEST_FILE_PATH );
-
-                fileReadWrite.loadFile();
+                XMLFile.loadFile(TEST_FILE_PATH);
 
                 //integer
-                    fileReadWrite.tryReadIntegerArray( 'IntegerArray', integerArrayRead );
+                    XMLFile.RootNode.tryReadIntegerArray( 'IntegerArray', integerArrayRead );
                     assert.AreEqual<integer>( integerArrayRead, integerArrayWrite );
 
                 //double
-                    fileReadWrite.tryReadDoubleArray( 'DoubleArray', doubleArrayRead );
-                    for i := 0 to ( length(doubleArrayRead) - 1 ) do
-                        assert.IsTrue( SameValue( doubleArrayRead[i], doubleArrayWrite[i], 1e-3 ) );
+                    XMLFile.RootNode.tryReadDoubleArray( 'DoubleArray', doubleArrayRead );
+                    TestDoubleArraysAreEqual( doubleArrayRead, doubleArrayWrite );
 
                 //string
-                    fileReadWrite.tryReadStringArray( 'StringArray', stringArrayRead );
+                    XMLFile.RootNode.tryReadStringArray( 'StringArray', stringArrayRead );
                     assert.AreEqual<string>( stringArrayRead, stringArrayWrite );
-
-                FreeAndNil( fileReadWrite );
         end;
 
     procedure TTestFileReaderWriterClass.testReadGhostData();
@@ -255,92 +352,68 @@ implementation
             testInt         : integer;
             testDouble      : double;
             testString      : string;
-            fileReadWrite   : TFileReaderWriter;
+            XMLFile   : TXMLFileReaderWriter;
         begin
             deleteTestFile();
 
             //save a file
-                fileReadWrite := TFileReaderWriter.create( TEST_FILE_PATH );
+                XMLFile.initialiseXMLDocument();
 
                 //boolean
-                    fileReadWrite.writeBool( 'boolean1', True );
-                    fileReadWrite.writeInteger( 'integer1', 2 );
-                    fileReadWrite.writeDouble( 'double1', 123.456 );
-                    fileReadWrite.writeString( 'string1', 'asdf' );
+                    XMLFile.RootNode.writeBoolean( 'boolean1', True );
+                    XMLFile.RootNode.writeInteger( 'integer1', 2 );
+                    XMLFile.RootNode.writeDouble( 'double1', 123.456 );
+                    XMLFile.RootNode.writeString( 'string1', 'asdf' );
 
-                fileReadWrite.saveFile();
-
-                FreeAndNil( fileReadWrite );
+                XMLFile.saveFile(TEST_FILE_PATH);
 
             //load the file
-                fileReadWrite := TFileReaderWriter.create( TEST_FILE_PATH );
-
-                fileReadWrite.loadFile();
-
                 //try read data that does not exist
-                    fileReadWrite.tryReadBool( 'ghostBool', testBool, True );
+                    XMLFile.RootNode.tryReadBoolean( 'ghostBool', testBool, True );
                     assert.AreEqual( testBool, True );
 
-                    fileReadWrite.tryReadInteger( 'ghostInt', testInt, 101 );
+                    XMLFile.RootNode.tryReadInteger( 'ghostInt', testInt, 101 );
                     assert.AreEqual( testInt, 101 );
 
-                    fileReadWrite.tryReadDouble( 'ghostDouble', testDouble, 159.789 );
+                    XMLFile.RootNode.tryReadDouble( 'ghostDouble', testDouble, 159.789 );
                     assert.IsTrue( SameValue( testDouble, 159.789, 1e-3 ) );
 
-                    fileReadWrite.tryReadString( 'ghostString', testString, 'asdf' );
+                    XMLFile.RootNode.tryReadString( 'ghostString', testString, 'asdf' );
                     assert.AreEqual( testString, 'asdf' );
-
-                FreeAndNil( fileReadWrite );
         end;
 
-    procedure TTestFileReaderWriterClass.testWriteData();
+    procedure TTestFileReaderWriterClass.testComplexType();
+        const
+            RECORD_IDENTIFIER : string = 'ComplexTypeData';
         var
-            integerArray    : TArray<integer>;
-            doubleArray     : TArray<double>;
-            stringArray     : TArray<string>;
-            fileReadWrite   : TFileReaderWriter;
+            complexRecordsAreEqual  : boolean;
+            readComplexType,
+            writeComplexType        : TComplexTypeRecord;
+            XMLFile                 : TXMLFileReaderWriter;
         begin
-            deleteTestFile();
+            //populate complex records with equal values
+                readComplexType.initialiseValues( True, 1, 3.5, 'Jason Barry', [1, 2, 3], [1.1, 2.2, 3.3], ['Jason', 'Daniel', 'Barry'] );
+                writeComplexType.initialiseValues( True, 1, 3.5, 'Jason Barry', [1, 2, 3], [1.1, 2.2, 3.3], ['Jason', 'Daniel', 'Barry'] );
 
-            fileReadWrite := TFileReaderWriter.create( TEST_FILE_PATH );
+            //save to XML file
+                XMLFile.initialiseXMLDocument();
 
-            //boolean
-                fileReadWrite.writeBool( 'boolean1', True );
-                fileReadWrite.writeBool( 'boolean2', False );
+                writeComplexType.writeToXML( XMLFile.RootNode, RECORD_IDENTIFIER );
 
-            //integer
-                fileReadWrite.writeInteger( 'integer1', 2 );
-                fileReadWrite.writeInteger( 'integer2', 8 );
-                fileReadWrite.writeInteger( 'integer3', 32 );
-                fileReadWrite.writeInteger( 'integer4', 128 );
-                fileReadWrite.writeInteger( 'integer5', 512 );
+                XMLFile.saveFile( TEST_FILE_PATH );
 
-            //double
-                fileReadWrite.writeDouble( 'double1', 123.456 );
-                fileReadWrite.writeDouble( 'double2', 654.987 );
-                fileReadWrite.writeDouble( 'double3', 741.852 );
-                fileReadWrite.writeDouble( 'double4', 369.258 );
-                fileReadWrite.writeDouble( 'double5', 159.753 );
+            //reset the file
+                XMLFile.initialiseXMLDocument();
 
-            //string
-                fileReadWrite.writeString( 'string1', 'asdf' );
-                fileReadWrite.writeString( 'string2', '!@#$%' );
-                fileReadWrite.writeString( 'string3', 'Jason Daniel Barry' );
-                fileReadWrite.writeString( 'string4', 'Youtube' );
-                fileReadWrite.writeString( 'string5', '123.456' );
+            //load from XML file
+                XMLFile.loadFile( TEST_FILE_PATH );
 
-            //array
-                integerArray   := [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
-                doubleArray    := [1.1, 2.2, 456.987, 159.951, 45.98, 79.651, 1472.8523, 1234.0987];
-                stringArray    := ['This', 'I$', '@ string', '123 array', 'to %$#', '159 test', 'reading', '@nd', 'WRITING'];
+                readComplexType.tryReadFromXML( XMLFile.RootNode, RECORD_IDENTIFIER );
 
-                fileReadWrite.writeIntegerArray( 'IntegerArray', integerArray );
-                fileReadWrite.writeDoubleArray( 'DoubleArray', doubleArray );
-                fileReadWrite.writeStringArray( 'StringArray', stringArray );
+            //test for equality of read and write records
+                complexRecordsAreEqual := readComplexType.isEqual( writeComplexType );
 
-            fileReadWrite.saveFile();
-
-            FreeAndNil( fileReadWrite );
+                assert.IsTrue( complexRecordsAreEqual );
         end;
 
 end.
