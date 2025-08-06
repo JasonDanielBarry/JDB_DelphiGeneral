@@ -123,9 +123,7 @@
         <DCCReference Include="Source\FileManagement\ArrayConversionMethods.pas"/>
         <DCCReference Include="Source\FileManagement\FileReaderWriterClass.pas"/>
         <DCCReference Include="Source\FileManagement\TEST_FileReaderWriterClass.pas"/>
-        <DCCReference Include="Source\FileManagement\XMLDocumentMethods.pas"/>
-        <DCCReference Include="Source\Engineering\LimitStateAngleClass.pas"/>
-        <DCCReference Include="Source\Engineering\LimitStateMaterialClass.pas"/>
+        <DCCReference Include="Source\FileManagement\XMLNodeWrapper.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

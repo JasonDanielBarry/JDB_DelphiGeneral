@@ -5,7 +5,7 @@ interface
     uses
         system.SysUtils, system.Classes, system.Generics.Collections, system.StrUtils,
         Xml.XMLDoc, Xml.XMLIntf, xml.xmldom,
-        ArrayConversionMethods, XMLDocumentMethods
+        ArrayConversionMethods, XMLNodeWrapper
         ;
 
     type

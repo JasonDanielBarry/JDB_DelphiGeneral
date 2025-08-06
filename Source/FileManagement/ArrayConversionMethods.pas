@@ -18,7 +18,6 @@ interface
 
         //double array to string array
             function convertDoubleArrayToStringArray(const doubleArrayIn : TArray<double>) : TArray<string>;
-        
 
 implementation
 
