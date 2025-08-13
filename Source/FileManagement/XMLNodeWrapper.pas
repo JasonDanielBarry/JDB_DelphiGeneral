@@ -419,11 +419,11 @@ implementation
             //integer
                 procedure TWrappedXMLNode.writeInteger(const dataIdentifierIn : string; const integerValueIn : integer);
                     var
-                        intStr : string;
+                        integerStr : string;
                     begin
-                        intStr := IntToStr( integerValueIn );
+                        integerStr := integerValueIn.ToString();
 
-                        writeValue( dataIdentifierIn, VT_INT, intStr );
+                        writeValue( dataIdentifierIn, VT_INT, integerStr );
                     end;
 
             //double
@@ -431,7 +431,7 @@ implementation
                     var
                         doubleStr : string;
                     begin
-                        doubleStr := FloatToStr( doubleValueIn );
+                        doubleStr := doubleValueIn.ToString();
 
                         writeValue( dataIdentifierIn, VT_DOUBLE, doubleStr );
                     end;
