@@ -179,7 +179,7 @@ implementation
                                 exit( False );
                             end;
 
-                        dataIsArray := Pos( ARRAY_ELEMENT_DELIMITER, readDataValue ) > 1;
+                        dataIsArray := readDataValue.Contains( ARRAY_ELEMENT_DELIMITER );
 
                         if NOT( dataIsArray ) then
                             begin

@@ -120,10 +120,15 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
-        <DCCReference Include="Source\FileManagement\ArrayConversionMethods.pas"/>
+        <DCCReference Include="Source\ArrayConversionMethods.pas"/>
         <DCCReference Include="Source\FileManagement\XMLFileReaderWriter.pas"/>
         <DCCReference Include="Source\FileManagement\TEST_FileReaderWriterClass.pas"/>
         <DCCReference Include="Source\FileManagement\XMLNodeWrapper.pas"/>
+        <DCCReference Include="Source\DataStructures\TreeStructure\TreeStructureClass.pas"/>
+        <DCCReference Include="Source\DataStructures\TreeStructure\TreeNodeBaseClass.pas"/>
+        <DCCReference Include="Source\DataStructures\TreeStructure\TreeStructureTypes.pas"/>
+        <DCCReference Include="Source\DataStructures\TreeStructure\TreeNodeWriterClass.pas"/>
+        <DCCReference Include="Source\DataStructures\TreeStructure\TreeNodeReaderClass.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

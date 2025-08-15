@@ -13,10 +13,15 @@ uses
   DUnitX.Loggers.Xml.NUnit,
   {$ENDIF }
   DUnitX.TestFramework,
-  ArrayConversionMethods in 'Source\FileManagement\ArrayConversionMethods.pas',
+  ArrayConversionMethods in 'Source\ArrayConversionMethods.pas',
   XMLFileReaderWriter in 'Source\FileManagement\XMLFileReaderWriter.pas',
   TEST_FileReaderWriterClass in 'Source\FileManagement\TEST_FileReaderWriterClass.pas',
-  XMLNodeWrapper in 'Source\FileManagement\XMLNodeWrapper.pas';
+  XMLNodeWrapper in 'Source\FileManagement\XMLNodeWrapper.pas',
+  TreeStructureClass in 'Source\DataStructures\TreeStructure\TreeStructureClass.pas',
+  TreeNodeBaseClass in 'Source\DataStructures\TreeStructure\TreeNodeBaseClass.pas',
+  TreeStructureTypes in 'Source\DataStructures\TreeStructure\TreeStructureTypes.pas',
+  TreeNodeWriterClass in 'Source\DataStructures\TreeStructure\TreeNodeWriterClass.pas',
+  TreeNodeReaderClass in 'Source\DataStructures\TreeStructure\TreeNodeReaderClass.pas';
 
 { keep comment here to protect the following conditional from being removed by the IDE when adding a unit }
 {$IFNDEF TESTINSIGHT}
